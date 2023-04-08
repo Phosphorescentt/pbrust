@@ -13,7 +13,7 @@ fn main() {
         position: Vector3(5.0, 0.0, 0.0),
         radius: 1.0,
         material: Material {
-            colour: Colour(255, 255, 255),
+            colour: Colour(255, 0, 0),
         },
     };
 
@@ -38,6 +38,7 @@ fn main() {
         view_direction: Vector3(1.0, 0.0, 0.0),
         horizontal_fov: PI / 4.0,
         vertical_fov: PI / 4.0,
+        ray_bounces: 1,
         resolution: (256, 256),
         scene: scene,
         filename: filename.to_owned(),
