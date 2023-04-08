@@ -2,8 +2,11 @@ pub mod math;
 pub mod objects;
 pub mod operations;
 
-use objects::{Camera, Colour, Material, Scene, Sphere, SphereLight, Vector3, Vector4};
+use math::Vector3;
+use objects::{Camera, Colour, Material, Scene, Sphere};
+
 use std::f32::consts::PI;
+use std::path::Path;
 
 fn main() {
     let sphere = Sphere {
@@ -29,6 +32,7 @@ fn main() {
     };
 
     let dt = chrono::offset::Utc::now();
+    let filename = format!("outputs/out@{}.png", dt.to_rfc3339());
     let camera = Camera {
         position: Vector3(0.0, 0.0, 0.0),
         view_direction: Vector3(1.0, 0.0, 0.0),
@@ -36,7 +40,7 @@ fn main() {
         vertical_fov: PI / 4.0,
         resolution: (1920, 1080),
         scene: scene,
-        filename: format!("outputs/out@{}.png", dt.to_rfc3339()).to_owned(),
+        filename: filename.to_owned(),
     };
 
     camera.render();

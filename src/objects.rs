@@ -1,4 +1,6 @@
-pub use crate::math::{Vector3, Vector4};
+use std::path::Path;
+
+pub use crate::math::{Mat3, Vector3};
 use image::{save_buffer, ColorType};
 
 trait Renderable {
@@ -46,29 +48,63 @@ pub struct Camera {
 
 impl Camera {
     pub fn render(&self) {
-        // let mut buffer: Vec<u8> =
-        //     vec![0; (self.resolution.0 as usize) * (self.resolution.1 as usize) * 3];
         let mut buffer: Vec<u8> = Vec::new();
-
         for y in (0..self.resolution.1).rev() {
             for x in 0..self.resolution.0 {
-                // let current_ray = Ray {
-                //     start_position: self.position,
-                //     direction: Vector3(0.0, 0.0, 0.0), // this is the trig bit
-                //     max_steps: 1000,
-                //     step_distance: 0.1,
-                // };
-                let r = x as f64 / (self.resolution.0) as f64;
-                let g = y as f64 / (self.resolution.1) as f64;
-                let b = 0.25;
+                let theta = (self.horizontal_fov / (self.resolution.0 as f32)) * (x as f32)
+                    - self.horizontal_fov / 2.0;
 
-                let ir = (255.0 * r) as u8;
-                let ig = (255.0 * g) as u8;
-                let ib = (255.0 * b) as u8;
+                let phi = (self.vertical_fov / (self.resolution.1 as f32)) * (y as f32)
+                    - self.vertical_fov / 2.0;
 
-                buffer.push(ir);
-                buffer.push(ig);
-                buffer.push(ib);
+                let y_rotation_matrix = Mat3 {
+                    m00: theta.cos(),
+                    m02: theta.sin(),
+                    m11: 1.0,
+                    m20: -theta.sin(),
+                    m22: theta.cos(),
+                    ..Default::default()
+                };
+
+                let z_rotation_matrix = Mat3 {
+                    m00: phi.cos(),
+                    m01: -phi.sin(),
+                    m10: phi.sin(),
+                    m11: phi.cos(),
+                    m22: 1.0,
+                    ..Default::default()
+                };
+
+                let full_rotation_matrix = z_rotation_matrix * y_rotation_matrix;
+                let ray_direction = full_rotation_matrix * Vector3(1.0, 0.0, 0.0);
+
+                let current_ray = Ray {
+                    start_position: self.position,
+                    direction: ray_direction,
+                    max_steps: 1000,
+                    step_distance: 0.1,
+                };
+
+                let mut intersected = false;
+                for object in &self.scene.objects {
+                    match current_ray.find_intersect(object) {
+                        Some(c) => {
+                            buffer.push(c.0);
+                            buffer.push(c.1);
+                            buffer.push(c.2);
+                            intersected = true;
+                            break;
+                        }
+                        None => { /* continue */ }
+                    }
+                }
+
+                // If we don't intersect anything then just make the pixel black.
+                if !intersected {
+                    buffer.push(0);
+                    buffer.push(0);
+                    buffer.push(0);
+                }
             }
         }
 
@@ -82,24 +118,6 @@ impl Camera {
             Ok(_) => println!("Image saved successfully"),
             Err(e) => eprintln!("{}", e),
         }
-
-        // for (x, y, pixel) in buffer.enumerate_pixels_mut() {
-        //     let r = x as f64 / (self.resolution.0) as f64;
-        //     let g = y as f64 / (self.resolution.1) as f64;
-        //     let b = 0.25;
-        //
-        //     let ir = (255.0 * r) as u8;
-        //     let ig = (255.0 * g) as u8;
-        //     let ib = (255.0 * b) as u8;
-        //
-        //     *pixel = Rgb([ir, ig, ib])
-        // }
-
-        // buffer.save(Path::new(&self.filename)).unwrap();
-        // match buffer.save(&self.filename) {
-        //     Ok(_) => println!("Good"),
-        //     Err(e) => println!("{}", e),
-        // };
     }
 }
 
@@ -110,9 +128,16 @@ impl Renderable for Sphere {
 }
 
 impl Ray {
-    fn find_intersect(&self, object: Sphere) -> Colour {
-        return Colour(0, 0, 0);
+    pub fn find_intersect(&self, object: &Sphere) -> Option<Colour> {
+        // if self.direction.0 > 0.1 {
+        //     return Some(Colour(255, 0, 0));
+        // }
+        if self.direction.1 > 0.1 {
+            return Some(Colour(0, 255, 0));
+        }
+        if self.direction.2 > 0.1 {
+            return Some(Colour(0, 0, 255));
+        }
+        return Some(Colour(0, 0, 0));
     }
 }
-
-pub trait LightSource {}
