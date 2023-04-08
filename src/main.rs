@@ -38,7 +38,7 @@ fn main() {
         view_direction: Vector3(1.0, 0.0, 0.0),
         horizontal_fov: PI / 4.0,
         vertical_fov: PI / 4.0,
-        resolution: (1920, 1080),
+        resolution: (256, 256),
         scene: scene,
         filename: filename.to_owned(),
     };

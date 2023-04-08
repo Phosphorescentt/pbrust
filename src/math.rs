@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul};
+use std::ops::{Add, Mul, Sub};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Vector2(pub f32, pub f32);
@@ -24,6 +24,33 @@ impl Add for Vector3 {
 
     fn add(self, other: Vector3) -> Self::Output {
         return Vector3(self.0 + other.0, self.1 + other.1, self.2 + other.2);
+    }
+}
+
+impl Sub for Vector3 {
+    type Output = Self;
+
+    fn sub(self, other: Vector3) -> Self::Output {
+        return Vector3(self.0 - other.0, self.1 - other.1, self.2 - other.2);
+    }
+}
+
+impl Vector3 {
+    pub fn abs(self) -> f32 {
+        return self.absp2().sqrt();
+    }
+
+    pub fn absp2(self) -> f32 {
+        return self.0 * self.0 + self.1 * self.1 + self.2 * self.2;
+    }
+}
+
+impl Mul<f32> for Vector3 {
+    type Output = Vector3;
+
+    fn mul(self, other: f32) -> Self::Output {
+        let mid = Vector3(self.0 * other, self.1 * other, self.2 * other);
+        return mid;
     }
 }
 

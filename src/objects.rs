@@ -1,10 +1,10 @@
 use std::path::Path;
 
 pub use crate::math::{Mat3, Vector3};
-use image::{save_buffer, ColorType};
+use image::ColorType;
 
 trait Renderable {
-    fn intersection(&self, start: Vector3, direction: Vector3) -> Option<(Vector3, Colour)>;
+    fn intersection(&self, point: Vector3) -> Option<(Vector3, Colour)>;
 }
 
 pub struct Colour(pub u8, pub u8, pub u8);
@@ -29,7 +29,7 @@ pub struct Ray {
     pub start_position: Vector3,
     pub direction: Vector3,
     pub max_steps: i32,
-    pub step_distance: f32,
+    pub step_size: f32,
 }
 
 pub struct Scene {
@@ -50,6 +50,7 @@ impl Camera {
     pub fn render(&self) {
         let mut buffer: Vec<u8> = Vec::new();
         for y in (0..self.resolution.1).rev() {
+            println!("New line!");
             for x in 0..self.resolution.0 {
                 let theta = (self.horizontal_fov / (self.resolution.0 as f32)) * (x as f32)
                     - self.horizontal_fov / 2.0;
@@ -82,7 +83,7 @@ impl Camera {
                     start_position: self.position,
                     direction: ray_direction,
                     max_steps: 1000,
-                    step_distance: 0.1,
+                    step_size: 0.1,
                 };
 
                 let mut intersected = false;
@@ -122,22 +123,31 @@ impl Camera {
 }
 
 impl Renderable for Sphere {
-    fn intersection(&self, start: Vector3, direction: Vector3) -> Option<(Vector3, Colour)> {
-        return Some((Vector3::default(), Colour(255, 255, 255)));
+    fn intersection(&self, point: Vector3) -> Option<(Vector3, Colour)> {
+        let delta = self.position - point;
+        // println!("{:?}", delta);
+
+        if delta.absp2() < self.radius * self.radius {
+            return Some((Vector3::default(), Colour(255, 255, 255)));
+        }
+
+        return None;
     }
 }
 
 impl Ray {
     pub fn find_intersect(&self, object: &Sphere) -> Option<Colour> {
-        // if self.direction.0 > 0.1 {
-        //     return Some(Colour(255, 0, 0));
-        // }
-        if self.direction.1 > 0.1 {
-            return Some(Colour(0, 255, 0));
+        let mut previous_position = self.start_position;
+        let mut current_position = self.start_position;
+        for _ in 0..self.max_steps {
+            match object.intersection(current_position) {
+                Some((_, c)) => return Some(c),
+                None => {}
+            }
+            previous_position = current_position;
+            current_position = current_position + self.direction * self.step_size;
         }
-        if self.direction.2 > 0.1 {
-            return Some(Colour(0, 0, 255));
-        }
+
         return Some(Colour(0, 0, 0));
     }
 }
