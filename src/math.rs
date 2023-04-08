@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Vector2(pub f32, pub f32);
@@ -36,12 +36,31 @@ impl Sub for Vector3 {
 }
 
 impl Vector3 {
-    pub fn abs(self) -> f32 {
+    pub fn abs(&self) -> f32 {
         return self.absp2().sqrt();
     }
 
-    pub fn absp2(self) -> f32 {
+    pub fn absp2(&self) -> f32 {
         return self.0 * self.0 + self.1 * self.1 + self.2 * self.2;
+    }
+
+    pub fn dot(&self, other: Vector3) -> f32 {
+        return self.0 * other.0 + self.1 * other.1 + self.2 * other.2;
+    }
+
+    pub fn angle(&self, other: Vector3) -> f32 {
+        let cos_theta = self.dot(other);
+        let theta = cos_theta.acos();
+        if theta < 0.0 {
+            return -theta;
+        } else {
+            return theta;
+        }
+    }
+
+    pub fn normalised(&self) -> Vector3 {
+        let m = self.abs();
+        return self.clone() / m;
     }
 }
 
@@ -49,8 +68,15 @@ impl Mul<f32> for Vector3 {
     type Output = Vector3;
 
     fn mul(self, other: f32) -> Self::Output {
-        let mid = Vector3(self.0 * other, self.1 * other, self.2 * other);
-        return mid;
+        return Vector3(self.0 * other, self.1 * other, self.2 * other);
+    }
+}
+
+impl Div<f32> for Vector3 {
+    type Output = Vector3;
+
+    fn div(self, other: f32) -> Self::Output {
+        return Vector3(self.0 / other, self.1 / other, self.2 / other);
     }
 }
 

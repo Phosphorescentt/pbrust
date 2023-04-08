@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::ops::Mul;
 
 pub use crate::math::{Mat3, Vector3};
 use image::ColorType;
@@ -6,11 +6,11 @@ use image::ColorType;
 trait Renderable {
     fn test_inside(&self, point: Vector3) -> bool;
     fn find_intersection(&self, p: Vector3, q: Vector3) -> Vector3;
-    fn normal_to_surface(&self, p: Vector3) -> Vector3;
+    fn normal_to_surface_at(&self, p: Vector3) -> Vector3;
 }
 
 #[derive(Copy, Clone)]
-pub struct Colour(pub u8, pub u8, pub u8);
+pub struct Colour(pub f32, pub f32, pub f32);
 pub struct ColourAlpha(pub u8, pub u8, pub u8, pub u8);
 
 pub struct Material {
@@ -30,6 +30,8 @@ pub struct SphereLight {
 
 pub struct Ray {
     pub start_position: Vector3,
+    pub current_position: Vector3,
+    pub previous_position: Vector3,
     pub direction: Vector3,
     pub max_steps: u32,
     pub step_size: f32,
@@ -49,6 +51,14 @@ pub struct Camera {
     pub resolution: (u32, u32),
     pub scene: Scene,
     pub filename: String,
+}
+
+impl Mul for Colour {
+    type Output = Self;
+
+    fn mul(self, other: Colour) -> Self::Output {
+        return Colour(self.0 * other.0, self.1 * other.1, self.2 * other.2);
+    }
 }
 
 impl Camera {
@@ -83,6 +93,8 @@ impl Camera {
 
                 let mut current_ray = Ray {
                     start_position: self.position,
+                    current_position: self.position,
+                    previous_position: self.position,
                     direction: ray_direction,
                     max_steps: 1000,
                     step_size: 0.1,
@@ -91,9 +103,9 @@ impl Camera {
 
                 match current_ray.cast(&self.scene) {
                     Some(c) => {
-                        buffer.push(c.0);
-                        buffer.push(c.1);
-                        buffer.push(c.2);
+                        buffer.push((c.0 * 255.0) as u8);
+                        buffer.push((c.1 * 255.0) as u8);
+                        buffer.push((c.2 * 255.0) as u8);
                     }
                     None => {
                         buffer.push(0);
@@ -135,8 +147,11 @@ impl Renderable for Sphere {
         let b = p.0 * q.0 + p.1 * q.1 + p.2 * q.2 - 2.0 * (p.0.powi(2) + p.1.powi(2) + p.2.powi(2));
         let c = p.0.powi(2) + p.1.powi(2) + p.2.powi(2) - self.radius.powi(2);
 
+        // TODO: fix this. something in here is very wrong
+
         let discriminant = b.powi(2) - 4.0 * a * c;
         if discriminant < 0.0 {
+            println!("{}", discriminant);
             panic!("Discriminant < 0.0 lollers");
         } else if discriminant == 0.0 {
             // one solution
@@ -159,33 +174,50 @@ impl Renderable for Sphere {
         }
     }
 
-    fn normal_to_surface(&self, p: Vector3) -> Vector3 {
+    fn normal_to_surface_at(&self, p: Vector3) -> Vector3 {
         let dir = p - self.position;
-        return dir;
+        return dir.normalised();
     }
 }
 
 impl Ray {
     pub fn cast(&mut self, scene: &Scene) -> Option<Colour> {
         let mut bounces = 0;
-        let mut previous_position = self.start_position;
-        let mut current_position = self.start_position;
+        self.previous_position = self.start_position;
+        self.current_position = self.start_position;
+        let mut current_colour = Colour(1.0, 1.0, 1.0);
         for _ in 0..self.max_steps {
             for object in scene.objects.iter().as_ref() {
-                if object.test_inside(current_position) {
+                if object.test_inside(self.current_position) {
                     let intersection_point =
-                        object.find_intersection(previous_position, current_position);
+                        object.find_intersection(self.previous_position, self.current_position);
+
                     // change direction to the perfect reflection i guess
                     // so some trig (as per).
-                    // for now just return the colour of the object we've hit
-                    return Some(object.material.colour);
+                    self.bounce(intersection_point, object);
+                    bounces += 1;
+
+                    current_colour = current_colour * object.material.colour;
+
+                    if bounces > self.max_bounces {
+                        return Some(current_colour);
+                    }
                 } else {
                     // do other stuff
                 }
-                previous_position = current_position;
-                current_position = current_position + self.direction * self.step_size;
             }
+            self.previous_position = self.current_position;
+            self.current_position = self.current_position + self.direction * self.step_size;
         }
         return None;
+    }
+
+    pub fn bounce(&mut self, intersection_point: Vector3, object: &Sphere) -> () {
+        // Normal specular reflection
+        let normal = object.normal_to_surface_at(intersection_point);
+        let delta = normal - (self.direction * -1.0);
+        let new_direction = self.direction + delta * 2.0;
+        self.current_position = intersection_point;
+        self.direction = new_direction;
     }
 }
