@@ -6,14 +6,14 @@ use math::Vector3;
 use objects::{Camera, Colour, Material, Scene, Sphere};
 
 use std::f32::consts::PI;
-use std::path::Path;
 
 fn main() {
     let s1 = Sphere {
         position: Vector3(10.0, 2.0, 0.0),
         radius: 1.0,
         material: Material {
-            colour: Colour(1.0, 0.0, 0.0),
+            colour: Colour(1.0, 0.1, 0.1),
+            emitter: false,
         },
     };
 
@@ -21,7 +21,8 @@ fn main() {
         position: Vector3(10.0, 0.0, 0.0),
         radius: 1.0,
         material: Material {
-            colour: Colour(0.0, 1.0, 0.0),
+            colour: Colour(0.1, 1.0, 0.1),
+            emitter: false,
         },
     };
 
@@ -29,22 +30,22 @@ fn main() {
         position: Vector3(10.0, -2.0, 0.0),
         radius: 1.0,
         material: Material {
-            colour: Colour(0.0, 0.0, 1.0),
+            colour: Colour(0.1, 0.1, 1.0),
+            emitter: false,
         },
     };
 
-    // let sun = SphereLight {
-    //     shape: Sphere {
-    //         position: Vector3(3.0, 2.0, 2.0),
-    //         radius: 1.0,
-    //     },
-    //     material: Material {
-    //         colour: Vector4(1.0, 1.0, 1.0, 1.0),
-    //     },
-    // };
+    let sun = Sphere {
+        position: Vector3(-5.0, 5.0, 0.0),
+        radius: 5.0,
+        material: Material {
+            colour: Colour(1.0, 1.0, 1.0),
+            emitter: true,
+        },
+    };
 
     let scene = Scene {
-        objects: vec![s1, s2, s3],
+        objects: vec![s1, s2, s3, sun],
     };
 
     let dt = chrono::offset::Utc::now();

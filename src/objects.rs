@@ -15,6 +15,7 @@ pub struct ColourAlpha(pub u8, pub u8, pub u8, pub u8);
 
 pub struct Material {
     pub colour: Colour,
+    pub emitter: bool,
 }
 
 pub struct Sphere {
@@ -145,10 +146,8 @@ impl Renderable for Sphere {
         let a = p.absp2() + q.absp2() - 2.0 * p.dot(q);
         let b = 2.0 * p.dot(q) - 2.0 * p.absp2();
         let c = p.absp2() - self.radius.powi(2);
-
-        // TODO: fix this. something in here is very wrong
-
         let discriminant = b.powi(2) - 4.0 * a * c;
+
         if discriminant < 0.0 {
             panic!("Discriminant < 0.0 lollers");
         } else if discriminant == 0.0 {
@@ -184,40 +183,45 @@ impl Ray {
         self.previous_position = self.start_position;
         self.current_position = self.start_position;
         let mut current_colour = Colour(1.0, 1.0, 1.0);
+        let mut colours: Vec<Colour> = Vec::new();
         for _ in 0..self.max_steps {
             for object in scene.objects.iter().as_ref() {
                 if object.test_inside(self.current_position) {
-                    // println!("{:?}", self.previous_position);
-                    // println!("{:?}", self.current_position);
                     let intersection_point =
                         object.find_intersection(self.previous_position, self.current_position);
 
-                    // change direction to the perfect reflection i guess
-                    // so some trig (as per).
                     self.bounce(intersection_point, object);
                     bounces += 1;
 
+                    colours.push(object.material.colour);
                     current_colour = current_colour * object.material.colour;
-                    // current_colour = object.material.colour;
+                    // if object.material.emitter {
+                    //     let mut final_colour = Colour(1.0, 1.0, 1.0);
+                    //     for colour in colours.iter().rev() {
+                    //         final_colour = final_colour * *colour;
+                    //     }
+                    //     return Some(final_colour);
+                    // }
 
                     if bounces > self.max_bounces {
+                        // return Some(Colour(0.0, 0.0, 0.0));
                         return Some(current_colour);
                     }
-                } else {
-                    // do other stuff
                 }
             }
             self.previous_position = self.current_position;
             self.current_position = self.current_position + self.direction * self.step_size;
         }
+        // return Some(Colour(0.0, 0.0, 0.0));
         return Some(current_colour);
     }
 
     pub fn bounce(&mut self, intersection_point: Vector3, object: &Sphere) -> () {
-        // Normal specular reflection
         let normal = object.normal_to_surface_at(intersection_point);
-        let delta = normal - (self.direction * -1.0);
-        let new_direction = self.direction + delta * 2.0;
+        let delta = normal - self.direction.normalised() * -1.0;
+        let new_direction =
+            (self.direction.normalised() * -1.0 + delta * 2.0) * self.direction.abs();
+
         self.current_position = intersection_point;
         self.direction = new_direction;
     }
