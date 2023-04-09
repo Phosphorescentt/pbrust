@@ -142,27 +142,25 @@ impl Renderable for Sphere {
     }
 
     fn find_intersection(&self, p: Vector3, q: Vector3) -> Vector3 {
-        let a = p.0.powi(2) + p.1.powi(2) + p.2.powi(2) + q.0.powi(2) + q.1.powi(2) + q.2.powi(2)
-            - (p.0 * q.0 + p.1 * q.1 + p.2 * q.2);
-        let b = p.0 * q.0 + p.1 * q.1 + p.2 * q.2 - 2.0 * (p.0.powi(2) + p.1.powi(2) + p.2.powi(2));
-        let c = p.0.powi(2) + p.1.powi(2) + p.2.powi(2) - self.radius.powi(2);
+        let a = p.absp2() + q.absp2() - 2.0 * p.dot(q);
+        let b = 2.0 * p.dot(q) - 2.0 * p.absp2();
+        let c = p.absp2() - self.radius.powi(2);
 
         // TODO: fix this. something in here is very wrong
 
         let discriminant = b.powi(2) - 4.0 * a * c;
         if discriminant < 0.0 {
-            println!("{}", discriminant);
             panic!("Discriminant < 0.0 lollers");
         } else if discriminant == 0.0 {
             // one solution
-            let t = -b / (4.0 * a * c);
+            let t = -b / (2.0 * a);
             let intersection_pos = p + (q - p) * t;
             return intersection_pos;
         } else {
             // two solutions, but return the one closer to the camera.
             // this should be the smaller of the two solutions
-            let t1 = (-b - (b.powi(2) - 4.0 * a * c).sqrt()) / (4.0 * a); // so this one (hopefully)
-            let t2 = (-b + (b.powi(2) - 4.0 * a * c).sqrt()) / (4.0 * a);
+            let t1 = (-b - (b.powi(2) - 4.0 * a * c).sqrt()) / (2.0 * a); // so this one (hopefully)
+            let t2 = (-b + (b.powi(2) - 4.0 * a * c).sqrt()) / (2.0 * a);
 
             if t1 <= t2 {
                 let intersection_pos = p + (q - p) * t1;
@@ -189,6 +187,8 @@ impl Ray {
         for _ in 0..self.max_steps {
             for object in scene.objects.iter().as_ref() {
                 if object.test_inside(self.current_position) {
+                    // println!("{:?}", self.previous_position);
+                    // println!("{:?}", self.current_position);
                     let intersection_point =
                         object.find_intersection(self.previous_position, self.current_position);
 
@@ -198,6 +198,7 @@ impl Ray {
                     bounces += 1;
 
                     current_colour = current_colour * object.material.colour;
+                    // current_colour = object.material.colour;
 
                     if bounces > self.max_bounces {
                         return Some(current_colour);
@@ -209,7 +210,7 @@ impl Ray {
             self.previous_position = self.current_position;
             self.current_position = self.current_position + self.direction * self.step_size;
         }
-        return None;
+        return Some(current_colour);
     }
 
     pub fn bounce(&mut self, intersection_point: Vector3, object: &Sphere) -> () {

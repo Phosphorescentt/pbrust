@@ -41,7 +41,7 @@ impl Vector3 {
     }
 
     pub fn absp2(&self) -> f32 {
-        return self.0 * self.0 + self.1 * self.1 + self.2 * self.2;
+        return self.0.powi(2) + self.1.powi(2) + self.2.powi(2);
     }
 
     pub fn dot(&self, other: Vector3) -> f32 {

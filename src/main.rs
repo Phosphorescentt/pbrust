@@ -9,11 +9,27 @@ use std::f32::consts::PI;
 use std::path::Path;
 
 fn main() {
-    let sphere = Sphere {
-        position: Vector3(5.0, 0.0, 0.0),
+    let s1 = Sphere {
+        position: Vector3(10.0, 2.0, 0.0),
         radius: 1.0,
         material: Material {
             colour: Colour(1.0, 0.0, 0.0),
+        },
+    };
+
+    let s2 = Sphere {
+        position: Vector3(10.0, 0.0, 0.0),
+        radius: 1.0,
+        material: Material {
+            colour: Colour(0.0, 1.0, 0.0),
+        },
+    };
+
+    let s3 = Sphere {
+        position: Vector3(10.0, -2.0, 0.0),
+        radius: 1.0,
+        material: Material {
+            colour: Colour(0.0, 0.0, 1.0),
         },
     };
 
@@ -28,7 +44,7 @@ fn main() {
     // };
 
     let scene = Scene {
-        objects: vec![sphere],
+        objects: vec![s1, s2, s3],
     };
 
     let dt = chrono::offset::Utc::now();
